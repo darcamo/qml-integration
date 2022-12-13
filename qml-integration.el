@@ -32,16 +32,16 @@
 (defgroup qml-integration nil "Easily run qmlscene and qmltestrunner with QML files in your project." :group 'tools :prefix "qml-integration-")
 
 
-(defcustom qml-integration-qml-root-folder nil "Root folder from where to run qmlscene." :type '(directory))
+(defcustom qml-integration-qml-root-folder nil "Root folder from where to run qmlscene." :type '(directory) :safe #'stringp)
 
 
 (defcustom qml-integration-import-directories '(".")
   "Directories to add to include when running qmlscene or qmltestrunner.
 
 Add here any folders with custom components in your project."
-  :type '(repeat string))
+  :type '(repeat string) :safe #'listp)
 
-(defcustom qml-integration-qt-quick-controls-style nil "Style to use with qmlscene." :type '(string))
+(defcustom qml-integration-qt-quick-controls-style nil "Style to use with qmlscene." :type '(string) :safe #'stringp)
 
 
 (defcustom qml-integration-qmlscene-extra-args ""
@@ -61,7 +61,7 @@ Do not include import folders here. For that use the
 (defconst qml-integration-system-styles '("Fusion" "material" "Universal" "Plasma") "Qt Quick system styles to choose from.")
 
 
-(defcustom qml-integration-user-styles nil "A list with user user styles." :type '(repeat string))
+(defcustom qml-integration-user-styles nil "A list with user user styles." :type '(repeat string) :safe #'listp)
 
 
 (defun qml-integration--get-qmlscene-import-directories-string ()
