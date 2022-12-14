@@ -48,20 +48,29 @@ Add here any folders with custom components in your project."
   "Extra arguments passed to qmlscene.
 Do not include import folders here. For that use the
 `qml-integration-import-directories' variable instead." :type
-'(string))
+  '(string))
 
 
 (defcustom qml-integration-qmltestrunner-extra-args "-silent"
   "Extra arguments passed to qmltestrunner.
 Do not include import folders here. For that use the
 `qml-integration-import-directories' variable instead." :type
-'(string))
+  '(string))
 
 
 (defconst qml-integration-system-styles '("Fusion" "material" "Universal" "Plasma") "Qt Quick system styles to choose from.")
 
 
 (defcustom qml-integration-user-styles nil "A list with user user styles." :type '(repeat string) :safe #'listp)
+
+
+(defcustom qml-integration-ignored-paths '("*/.*" "./build*")
+  "List of ignored paths when using 'find' program to find QML files.
+
+Note: This is only used when the 'fd' program is not available.
+
+For each 'directory' in `qml-integration-ignored-paths', the string
+'-not -path <directory>' will be added to the find command." :type '(repeat string))
 
 
 (defun qml-integration--get-qmlscene-import-directories-string ()
@@ -74,14 +83,37 @@ Do not include import folders here. For that use the
   (s-join " " (mapcar #'(lambda (arg) (concat "-import " arg)) qml-integration-import-directories)))
 
 
+(defun qml-integration--get-fd-command-string (qmlquery)
+  "Get the command to find the QML files matching `QMLQUERY'.
+
+This uses the 'fd' program."
+  (format "fd -t f %s %s" qmlquery (project-root (project-current)))
+  )
+
+
+(defun qml-integration--get-find-command-string (qmlquery)
+  "Get the command to find the QML files matching `QMLQUERY'.
+
+This uses the 'find'  program."
+  (format "find %s %s -o -type f -iname \"%s\""
+          (project-root (project-current))
+          (s-join " " (mapcar #'(lambda (elem) (format "-path \"%s\" -prune" elem) ) qml-integration-ignored-paths))
+          qmlquery)
+  )
+
+
 (defun qml-integration-get-qml-files ()
   "Get a list with all QML files in the project."
-  (split-string (shell-command-to-string (format "fd -t f \".qml$\" %s" (project-root (project-current))))))
+  (if (executable-find "fd")
+      (split-string (shell-command-to-string (qml-integration--get-fd-command-string ".qml$")))
+    (split-string (shell-command-to-string (qml-integration--get-find-command-string "*qml")))))
 
 
 (defun qml-integration-get-qml-test-files ()
   "Get a list with all QML files in the project."
-  (split-string (shell-command-to-string (format "fd -t f \"tst_.*\.qml$\" %s" (project-root (project-current))))))
+  (if (executable-find "fd")
+      (split-string (shell-command-to-string (qml-integration--get-fd-command-string "tst_.*.qml$")))
+    (split-string (shell-command-to-string (qml-integration--get-find-command-string "tst_*.qml")))))
 
 
 (defun qml-integration--get-styles ()
@@ -108,13 +140,13 @@ Do not include import folders here. For that use the
 (defun qml-integration-run-qmlscene ()
   "Ask the user to choose a QML file in the project and run it with qmlscene."
   (interactive)
-    (compile (format
-              "cd %s && %s qmlscene %s %s %s"
-              qml-integration-qml-root-folder
-              (qml-integration--get-style-string)
-              (qml-integration--get-qmlscene-import-directories-string)
-              qml-integration-qmlscene-extra-args
-              (completing-read "Choose file: " (qml-integration-get-qml-files) nil t))))
+  (compile (format
+            "cd %s && %s qmlscene %s %s %s"
+            qml-integration-qml-root-folder
+            (qml-integration--get-style-string)
+            (qml-integration--get-qmlscene-import-directories-string)
+            qml-integration-qmlscene-extra-args
+            (completing-read "Choose file: " (qml-integration-get-qml-files) nil t))))
 
 
 (defun qml-integration-run-qmltestrunner ()
