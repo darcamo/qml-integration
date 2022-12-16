@@ -74,6 +74,67 @@ test code from inside a 'test project'."
            (format "fd -t f %s %s" "query" (project-root (project-current))))))
 
 
+(ert-deftest test-qml-integration--get-find-command-string()
+  (let ((qml-integration-ignored-paths nil))
+    (should (equal
+             (qml-integration--get-find-command-string "query")
+             (format "find %s -type f -iname \"query\"" (project-root (project-current))))))
+
+  (let ((qml-integration-ignored-paths '("path1")))
+    (should (equal
+             (qml-integration--get-find-command-string "query")
+             (format "find %s -not -path \"path1\" -type f -iname \"query\"" (project-root (project-current)))))
+    )
+
+  (let ((qml-integration-ignored-paths '("path1" "path2" "path3")))
+    (should (equal
+             (qml-integration--get-find-command-string "query")
+             (format "find %s -not -path \"path1\" -not -path \"path2\" -not -path \"path3\" -type f -iname \"query\"" (project-root (project-current)))))
+    )
+  )
+
+
+;; TODO: test-qml-integration-get-qml-files
+;; TODO: test-qml-integration-get-qml-test-files
+
+
+(ert-deftest test-qml-integration--get-styles ()
+  (let ((qml-integration-user-styles nil))
+    (should (equal (qml-integration--get-styles) '("Fusion" "material" "Universal" "Plasma")))
+    )
+
+  (let ((qml-integration-user-styles '("mystyle1" "mystyle2")))
+    (should (equal (qml-integration--get-styles) '("mystyle1" "mystyle2" "Fusion" "material" "Universal" "Plasma")))))
+
+
+;; TODO: test-qml-integration-choose-qml-style
+
+
+(ert-deftest test-qml-integration--get-style-string ()
+  (let ((qml-integration-qt-quick-controls-style nil))
+    (should (equal (qml-integration--get-style-string) ""))
+    )
+
+  (let ((qml-integration-qt-quick-controls-style "some-style"))
+    (should (equal (qml-integration--get-style-string) "QT_QUICK_CONTROLS_STYLE=some-style"))))
+
+
+;; TODO: test-qml-integration-run-qmlscene
+;; TODO: test-qml-integration-run-qmltestrunner
+
+
+
+
+
+;; : find . -not -path "./build*" -not -path "*/.*" -type f | wc -l
+
+
+;; : find . -type d \( -path "*/.*" -prune -o -path "./Documentation" -prune -o -path "./package" -prune -o -path "./sdk" -prune -o -path "./Tools" -prune -o -path "./trust_agent_ipc" -prune -o -path "./Dockerfile" -prune -o -path "./cmake" -prune -o -path "./licenses" -prune -o -path "./build*" -prune -o -path "./modules/_submodules" -prune -o -path "./modules/safe-c-library" -prune -o -path "./modules/logger" -prune -o -path "./modules/legacy" -prune -o -path "./modules/broker*" -prune -o -path "./modules/test*" -prune -o -path "./modules/edid_retriever" -prune -o -path "./modules/customization_example" -prune -o -path "./modules/vchan_plugins" -prune -o -path "./modules/tera_crypto" -prune -o -path "./modules/ndk_build" -prune -o -path "./modules/utils" -prune -o -path "./modules/customization" -prune -o -path "./modules/layer_4" -prune -o -path "./modules/android" -prune -o -path "./modules/high_performance_client" -prune -o -path "*/localization" -prune -o -path "*/translations" -prune -o -path "*/build" -prune \) -o -type f -name "*qml" | wc -l
+
+;; : find . -type d \( -path "*/.*" -prune -o -path "./Documentation" -prune -o -path "./package" -prune -o -path "./sdk" -prune -o -path "./Tools" -prune -o -path "./trust_agent_ipc" -prune -o -path "./Dockerfile" -prune -o -path "./cmake" -prune -o -path "./licenses" -prune -o -path "./build*" -prune -o -path "./modules/_submodules" -prune -o -path "./modules/safe-c-library" -prune -o -path "./modules/logger" -prune -o -path "./modules/legacy" -prune -o -path "./modules/broker*" -prune -o -path "./modules/test*" -prune -o -path "./modules/edid_retriever" -prune -o -path "./modules/customization_example" -prune -o -path "./modules/vchan_plugins" -prune -o -path "./modules/tera_crypto" -prune -o -path "./modules/ndk_build" -prune -o -path "./modules/utils" -prune -o -path "./modules/customization" -prune -o -path "./modules/layer_4" -prune -o -path "./modules/android" -prune -o -path "./modules/high_performance_client" -prune -o -path "*/localization" -prune -o -path "*/translations" -prune -o -path "*/build" -prune \) -not -path "*/.*" -not -path "./build*" -o -type f -name "*qml" | wc -l
+
+
+
 ;; TODO: Finish the tests
 
 

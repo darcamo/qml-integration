@@ -95,11 +95,19 @@ This uses the 'fd' program."
   "Get the command to find the QML files matching `QMLQUERY'.
 
 This uses the 'find'  program."
-  (format "find %s %s -o -type f -iname \"%s\""
+  (cond
+   ((eq (length qml-integration-ignored-paths) 0)
+    (format "find %s -type f -iname \"%s\""
           (project-root (project-current))
-          (s-join " " (mapcar #'(lambda (elem) (format "-path \"%s\" -prune" elem) ) qml-integration-ignored-paths))
           qmlquery)
-  )
+    )
+
+   (t
+    (format "find %s %s -type f -iname \"%s\""
+          (project-root (project-current))
+          (s-join " " (mapcar #'(lambda (elem) (format "-not -path \"%s\"" elem) ) qml-integration-ignored-paths))
+          qmlquery))
+   ))
 
 
 (defun qml-integration-get-qml-files ()
