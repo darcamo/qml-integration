@@ -70,7 +70,7 @@ Do not include import folders here. For that use the
 Note: This is only used when the 'fd' program is not available.
 
 For each 'directory' in `qml-integration-ignored-paths', the string
-'-not -path <directory>' will be added to the find command." :type '(repeat string))
+'-not -path <directory>' will be added to the find command." :type '(repeat string) :safe #'listp)
 
 
 (defun qml-integration--get-qmlscene-import-directories-string ()
