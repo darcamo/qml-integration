@@ -110,18 +110,42 @@ This uses the 'find'  program."
    ))
 
 
+(defun qml-integration--get-qml-files-using-fd ()
+  "Get a list with all QML files in the project using the 'fd' program."
+  (split-string (shell-command-to-string (qml-integration--get-fd-command-string ".qml$")))
+  )
+
+(defun qml-integration--get-qml-files-using-find ()
+  "Get a list with all QML files in the project using the 'find' program."
+  (split-string (shell-command-to-string (qml-integration--get-find-command-string "*qml"))))
+
+
+
 (defun qml-integration-get-qml-files ()
   "Get a list with all QML files in the project."
   (if (executable-find "fd")
-      (split-string (shell-command-to-string (qml-integration--get-fd-command-string ".qml$")))
-    (split-string (shell-command-to-string (qml-integration--get-find-command-string "*qml")))))
+      (qml-integration--get-qml-files-using-fd)
+    (qml-integration--get-qml-files-using-find)))
+
+
+
+(defun qml-integration--get-qml-test-files-using-fd ()
+  "Get a list with all QML files in the project using the 'fd' program."
+  (split-string (shell-command-to-string (qml-integration--get-fd-command-string "\"tst_.*.qml$\""))))
+
+
+(defun qml-integration--get-qml-test-files-using-find ()
+  "Get a list with all QML files in the project using the 'find' program."
+  (split-string (shell-command-to-string (qml-integration--get-find-command-string "tst_*.qml"))))
+
 
 
 (defun qml-integration-get-qml-test-files ()
   "Get a list with all QML files in the project."
   (if (executable-find "fd")
-      (split-string (shell-command-to-string (qml-integration--get-fd-command-string "tst_.*.qml$")))
-    (split-string (shell-command-to-string (qml-integration--get-find-command-string "tst_*.qml")))))
+      (qml-integration--get-qml-test-files-using-fd)
+    (qml-integration--get-qml-test-files-using-find)
+    ))
 
 
 (defun qml-integration--get-styles ()

@@ -94,8 +94,91 @@ test code from inside a 'test project'."
   )
 
 
-;; TODO: test-qml-integration-get-qml-files
-;; TODO: test-qml-integration-get-qml-test-files
+(ert-deftest test-qml-integration--get-qml-files-using-find ()
+
+  (test-fixture-setup
+   "test-empty-project"
+   (lambda ()
+     (let ((expected-files nil))
+       (should (seq-set-equal-p (qml-integration--get-qml-files-using-find) expected-files)))))
+
+  (let ((qml-integration-ignored-paths nil))
+    (test-fixture-setup
+     "test-project"
+     (lambda ()
+       (let ((expected-files
+              (mapcar 'expand-file-name '("path1/path1-file2.qml"
+                                          "path1/path1-file1.qml"
+                                          "path2/path2-file2.qml"
+                                          "path2/path2-file1.qml"
+                                          "ignore-path1/ignore-path1-file1.qml"
+                                          "ignore-path2/ignore-path2-file1.qml"
+                                          "tests/tst_test1.qml"
+                                          "tests/tst_test2.qml"
+                                          "tests/tst_test3.qml"))))
+         (should (seq-set-equal-p (qml-integration--get-qml-files-using-find) expected-files))))))
+
+  (let ((qml-integration-ignored-paths '("*/ignore-path1/*" "*/ignore-path2/*")))
+    (test-fixture-setup
+     "test-project"
+     (lambda ()
+       (let ((expected-files
+              (mapcar 'expand-file-name '("path1/path1-file2.qml"
+                                          "path1/path1-file1.qml"
+                                          "path2/path2-file2.qml"
+                                          "path2/path2-file1.qml"
+                                          "tests/tst_test1.qml"
+                                          "tests/tst_test2.qml"
+                                          "tests/tst_test3.qml"
+                                          ;; "ignore-path1/ignore-path1-file1.qml"
+                                          ;; "ignore-path2/ignore-path2-file1.qml"
+                                          ))))
+         (should (seq-set-equal-p (qml-integration--get-qml-files-using-find) expected-files)))))))
+
+
+(ert-deftest test-qml-integration--get-qml-files-using-fd ()
+  (test-fixture-setup
+   "test-empty-project"
+   (lambda ()
+     (let ((expected-files nil))
+       (should (seq-set-equal-p (qml-integration--get-qml-files-using-fd) expected-files)))))
+
+  (test-fixture-setup
+   "test-project"
+   (lambda ()
+     (let ((expected-files
+            (mapcar 'expand-file-name '("path1/path1-file2.qml"
+                                        "path1/path1-file1.qml"
+                                        "path2/path2-file2.qml"
+                                        "path2/path2-file1.qml"
+                                        "ignore-path1/ignore-path1-file1.qml"
+                                        "ignore-path2/ignore-path2-file1.qml"
+                                        "tests/tst_test1.qml"
+                                        "tests/tst_test2.qml"
+                                        "tests/tst_test3.qml"))))
+       (should (seq-set-equal-p (qml-integration--get-qml-files-using-fd) expected-files))))))
+
+
+(ert-deftest test-qml-integration--get-qml-test-files-using-fd ()
+  (test-fixture-setup
+   "test-project"
+   (lambda ()
+     (let ((expected-files
+            (mapcar 'expand-file-name '("tests/tst_test1.qml"
+                                        "tests/tst_test2.qml"
+                                        "tests/tst_test3.qml"))))
+       (should (seq-set-equal-p (qml-integration--get-qml-test-files-using-fd) expected-files))))))
+
+
+(ert-deftest test-qml-integration--get-qml-test-files-using-find ()
+  (test-fixture-setup
+   "test-project"
+   (lambda ()
+     (let ((expected-files
+            (mapcar 'expand-file-name '("tests/tst_test1.qml"
+                                        "tests/tst_test2.qml"
+                                        "tests/tst_test3.qml"))))
+       (should (seq-set-equal-p (qml-integration--get-qml-test-files-using-find) expected-files))))))
 
 
 (ert-deftest test-qml-integration--get-styles ()
