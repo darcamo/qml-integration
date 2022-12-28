@@ -172,13 +172,22 @@ This uses the 'find'  program."
 (defun qml-integration-run-qmlscene ()
   "Ask the user to choose a QML file in the project and run it with qmlscene."
   (interactive)
-  (compile (format
-            "cd %s && %s qmlscene %s %s %s"
-            qml-integration-qml-root-folder
-            (qml-integration--get-style-string)
-            (qml-integration--get-qmlscene-import-directories-string)
-            qml-integration-qmlscene-extra-args
-            (completing-read "Choose file: " (qml-integration-get-qml-files) nil t))))
+  (if qml-integration-qml-root-folder
+      (compile (format
+                "cd %s && %s qmlscene %s %s %s"
+                qml-integration-qml-root-folder
+                (qml-integration--get-style-string)
+                (qml-integration--get-qmlscene-import-directories-string)
+                qml-integration-qmlscene-extra-args
+                (completing-read "Choose file: " (qml-integration-get-qml-files) nil t)))
+    (compile (format
+              "%s qmlscene %s %s %s"
+              (qml-integration--get-style-string)
+              (qml-integration--get-qmlscene-import-directories-string)
+              qml-integration-qmlscene-extra-args
+              (completing-read "Choose file: " (qml-integration-get-qml-files) nil t))))
+  
+  )
 
 
 (defun qml-integration-run-qmltestrunner ()
