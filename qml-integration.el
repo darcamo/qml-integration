@@ -47,15 +47,15 @@ Add here any folders with custom components in your project."
 (defcustom qml-integration-qmlscene-extra-args ""
   "Extra arguments passed to qmlscene.
 Do not include import folders here. For that use the
-`qml-integration-import-directories' variable instead." :type
-  '(string))
+`qml-integration-import-directories' variable instead."
+  :type '(string) :safe #'stringp)
 
 
 (defcustom qml-integration-qmltestrunner-extra-args "-silent"
   "Extra arguments passed to qmltestrunner.
 Do not include import folders here. For that use the
-`qml-integration-import-directories' variable instead." :type
-  '(string))
+`qml-integration-import-directories' variable instead."
+  :type '(string) :safe #'stringp)
 
 
 (defconst qml-integration-system-styles '("Fusion" "material" "Universal" "Plasma") "Qt Quick system styles to choose from.")
