@@ -2,10 +2,16 @@
 
 ;; Copyright (C) 2022  Darlan Cavalcante Moreira
 
-;; Author: Darlan Cavalcante Moreira <darlan@darlan-notebook>
-;; Keywords: QML
+;; Author: Darlan Cavalcante Moreira <darcamo@gmail.com>
+;; Version: 0.1
+;; Package-Requires: ((emacs "28.1") s)
+;; Homepage: https://github.com/darcamo/qml-integration
+;; Keywords: QML language tools
+;; URL: https://github.com/darcamo/qml-integration
 
-;; This program is free software; you can redistribute it and/or modify
+;; This file is not part of GNU Emacs
+
+;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
 ;; (at your option) any later version.
@@ -18,6 +24,7 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+
 ;;; Commentary:
 
 ;; Provide functions to easily run qmlscene and qmltestrunner with any
@@ -26,7 +33,6 @@
 ;;; Code:
 (require 'project)
 (require 's)
-(require 'qml-mode)
 
 
 (defgroup qml-integration nil "Easily run qmlscene and qmltestrunner with QML files in your project." :group 'tools :prefix "qml-integration-")
