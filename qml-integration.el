@@ -71,11 +71,11 @@ Do not include import folders here. For that use the
 
 
 (defcustom qml-integration-ignored-paths '("*/.*" "./build*")
-  "List of ignored paths when using 'find' program to find QML files.
+  "List of ignored paths when using `find' program to find QML files.
 
-Note: This is only used when the 'fd' program is not available.
+Note: This is only used when the `fd' program is not available.
 
-For each 'directory' in `qml-integration-ignored-paths', the string
+For each `directory' in `qml-integration-ignored-paths', the string
 '-not -path <directory>' will be added to the find command." :type '(repeat string) :safe #'listp)
 
 
@@ -92,7 +92,7 @@ For each 'directory' in `qml-integration-ignored-paths', the string
 (defun qml-integration--get-fd-command-string (qmlquery)
   "Get the command to find the QML files matching `QMLQUERY'.
 
-This uses the 'fd' program."
+This uses the `fd' program."
   (format "fd -t f %s %s" qmlquery (project-root (project-current)))
   )
 
@@ -100,7 +100,7 @@ This uses the 'fd' program."
 (defun qml-integration--get-find-command-string (qmlquery)
   "Get the command to find the QML files matching `QMLQUERY'.
 
-This uses the 'find'  program."
+This uses the `find'  program."
   (cond
    ((eq (length qml-integration-ignored-paths) 0)
     (format "find %s -type f -iname \"%s\""
@@ -117,12 +117,12 @@ This uses the 'find'  program."
 
 
 (defun qml-integration--get-qml-files-using-fd ()
-  "Get a list with all QML files in the project using the 'fd' program."
+  "Get a list with all QML files in the project using the `fd' program."
   (split-string (shell-command-to-string (qml-integration--get-fd-command-string ".qml$")))
   )
 
 (defun qml-integration--get-qml-files-using-find ()
-  "Get a list with all QML files in the project using the 'find' program."
+  "Get a list with all QML files in the project using the `find' program."
   (split-string (shell-command-to-string (qml-integration--get-find-command-string "*qml"))))
 
 
@@ -136,12 +136,12 @@ This uses the 'find'  program."
 
 
 (defun qml-integration--get-qml-test-files-using-fd ()
-  "Get a list with all QML files in the project using the 'fd' program."
+  "Get a list with all QML files in the project using the `fd' program."
   (split-string (shell-command-to-string (qml-integration--get-fd-command-string "\"tst_.*.qml$\""))))
 
 
 (defun qml-integration--get-qml-test-files-using-find ()
-  "Get a list with all QML files in the project using the 'find' program."
+  "Get a list with all QML files in the project using the `find' program."
   (split-string (shell-command-to-string (qml-integration--get-find-command-string "tst_*.qml"))))
 
 
