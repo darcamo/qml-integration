@@ -37,6 +37,9 @@
 
 (defgroup qml-integration nil "Easily run qmlscene and qmltestrunner with QML files in your project." :group 'tools :prefix "qml-integration-")
 
+(defcustom qml-integration-qmlscene-program "qmlscene" "The qmlscene path. It can be simply \"qmlscene\" if it is in the system path." :type '(string))
+
+(defcustom qml-integration-qmltestrunner-program "qmltestrunner" "The qmltestrunner path. It can be simply \"qmltestrunner\" if it is in the system path." :type '(string))
 
 (defcustom qml-integration-qml-root-folder nil "Root folder from where to run qmlscene." :type '(directory) :safe #'stringp)
 
@@ -180,15 +183,17 @@ This uses the `find'  program."
   (interactive)
   (if qml-integration-qml-root-folder
       (compile (format
-                "cd %s && %s qmlscene %s %s %s"
+                "cd %s && %s %s %s %s %s"
                 qml-integration-qml-root-folder
                 (qml-integration--get-style-string)
+                qml-integration-qmlscene-program
                 (qml-integration--get-qmlscene-import-directories-string)
                 qml-integration-qmlscene-extra-args
                 (completing-read "Choose file: " (qml-integration-get-qml-files) nil t)))
     (compile (format
-              "%s qmlscene %s %s %s"
+              "%s %s %s %s %s"
               (qml-integration--get-style-string)
+              qml-integration-qmlscene-program
               (qml-integration--get-qmlscene-import-directories-string)
               qml-integration-qmlscene-extra-args
               (completing-read "Choose file: " (qml-integration-get-qml-files) nil t))))
@@ -201,15 +206,17 @@ This uses the `find'  program."
   (interactive)
   (if current-prefix-arg
       (compile (format
-                "cd %s && %s qmltestrunner %s %s"
+                "cd %s && %s %s %s %s"
                 qml-integration-qml-root-folder
                 (qml-integration--get-style-string)
+                qml-integration-qmltestrunner-program
                 (qml-integration--get-qmltestrunner-import-directories-string)
                 qml-integration-qmltestrunner-extra-args))
     (compile (format
-              "cd %s && %s qmltestrunner %s -input %s %s"
+              "cd %s && %s %s %s -input %s %s"
               qml-integration-qml-root-folder
               (qml-integration--get-style-string)
+              qml-integration-qmltestrunner-program
               (qml-integration--get-qmltestrunner-import-directories-string)
               (completing-read "Choose test file: " (qml-integration-get-qml-test-files) nil t)
               qml-integration-qmltestrunner-extra-args))))
