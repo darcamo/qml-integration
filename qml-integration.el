@@ -41,6 +41,8 @@
 
 (defcustom qml-integration-qmltestrunner-program "qmltestrunner" "The qmltestrunner path. It can be simply \"qmltestrunner\" if it is in the system path." :type '(string))
 
+(defcustom qml-integration-qmllint-program "qmllint" "The qmllint path. It can be simply \"qmllint\" if it is in the system path." :type '(string))
+
 (defcustom qml-integration-qml-root-folder nil "Root folder from where to run qmlscene." :type '(directory) :safe #'stringp)
 
 
@@ -59,6 +61,11 @@ Do not include import folders here. For that use the
 `qml-integration-import-directories' variable instead."
   :type '(string) :safe #'stringp)
 
+(defcustom qml-integration-qmllint-extra-args ""
+  "Extra arguments passed to qmllint.
+Do not include import folders here. For that use the
+`qml-integration-import-directories' variable instead."
+  :type '(string) :safe #'stringp)
 
 (defcustom qml-integration-qmltestrunner-extra-args "-silent"
   "Extra arguments passed to qmltestrunner.
@@ -86,6 +93,9 @@ For each `directory' in `qml-integration-ignored-paths', the string
   "Get a string with import statements to pass to qmlscene."
   (s-join " " (mapcar #'(lambda (arg) (concat "-I " arg)) qml-integration-import-directories)))
 
+(defun qml-integration--get-qmllint-import-directories-string ()
+  "Get a string with import statements to pass to qmllint."
+  (qml-integration--get-qmlscene-import-directories-string))
 
 (defun qml-integration--get-qmltestrunner-import-directories-string ()
   "Get a string with import statements to pass to qmltestrunner."
@@ -196,9 +206,28 @@ This uses the `find'  program."
               qml-integration-qmlscene-program
               (qml-integration--get-qmlscene-import-directories-string)
               qml-integration-qmlscene-extra-args
-              (completing-read "Choose file: " (qml-integration-get-qml-files) nil t))))
-  
-  )
+              (completing-read "Choose file: " (qml-integration-get-qml-files) nil t)))))
+
+
+(defun qml-integration-run-qmllint ()
+  "Ask the user to choose a QML file in the project and run it with qmllint."
+  (interactive)
+  (if qml-integration-qml-root-folder
+      (compile (format
+                "cd %s && %s %s %s %s %s"
+                qml-integration-qml-root-folder
+                (qml-integration--get-style-string)
+                qml-integration-qmllint-program
+                (qml-integration--get-qmllint-import-directories-string)
+                qml-integration-qmllint-extra-args
+                (completing-read "Choose file: " (qml-integration-get-qml-files) nil t)))
+    (compile (format
+              "%s %s %s %s %s"
+              (qml-integration--get-style-string)
+              qml-integration-qmllint-program
+              (qml-integration--get-qmllint-import-directories-string)
+              qml-integration-qmllint-extra-args
+              (completing-read "Choose file: " (qml-integration-get-qml-files) nil t)))))
 
 
 (defun qml-integration-run-qmltestrunner ()
