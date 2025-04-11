@@ -42,30 +42,32 @@ test code from inside a 'test project'."
 ;; xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-(ert-deftest test-qml-integration--get-qmlscene-import-directories-string ()
-  (let ((qml-integration-import-directories '()))
-    (should (equal (qml-integration--get-qmlscene-import-directories-string)
-                   "")))
-  (let ((qml-integration-import-directories '(".")))
-    (should (equal (qml-integration--get-qmlscene-import-directories-string)
-                   "-I .")))
-  (let ((qml-integration-import-directories '("." "imports")))
-    (should (equal (qml-integration--get-qmlscene-import-directories-string)
-                   "-I . -I imports")))
-  )
+(ert-deftest test-qml-integration--get-import-directories-string ()
+  ;; This is a parametric test. The `all-tests-data` variable is a
+  ;; list, where each element is a list of parameters corresponding to
+  ;; a single test. The first parameter is the tool, followed by the
+  ;; list of import directories and then the expected string from
+  ;; applying `qml-integration--get-import-directories-string`.
+  (let ((all-tests-data '((qmlscene () "")
+                          (qmlscene (".") "-I .")
+                          (qmlscene ("." "imports") "-I . -I imports")
+                          (qmltestrunner () "")
+                          (qmltestrunner (".") "-import .")
+                          (qmltestrunner ("." "imports") "-import . -import imports")
+                          (qmllint () "")
+                          (qmllint (".") "-I .")
+                          (qmllint ("." "imports") "-I . -I imports")
+                          )))
 
-
-(ert-deftest test-qml-integration--get-qmltestrunner-import-directories-string ()
-  (let ((qml-integration-import-directories '()))
-    (should (equal (qml-integration--get-qmltestrunner-import-directories-string)
-                   "")))
-  (let ((qml-integration-import-directories '(".")))
-    (should (equal (qml-integration--get-qmltestrunner-import-directories-string)
-                   "-import .")))
-  (let ((qml-integration-import-directories '("." "imports")))
-    (should (equal (qml-integration--get-qmltestrunner-import-directories-string)
-                   "-import . -import imports")))
-  )
+    ;; Decompose test-data for a test into the `tool`,
+    ;; `qml-integration-import-directories` and `expected-string`
+    ;; variables
+    (dolist (test-data all-tests-data)
+      (pcase-let* ((`(,tool
+                      ,qml-integration-import-directories
+                      ,expected-string)
+                    test-data))
+        (should (equal (qml-integration--get-import-directories-string tool) expected-string))))))
 
 
 (ert-deftest qml-integration--get-fd-command-string()
@@ -83,24 +85,22 @@ test code from inside a 'test project'."
   (let ((qml-integration-ignored-paths '("path1")))
     (should (equal
              (qml-integration--get-find-command-string "query")
-             (format "find %s -not -path \"path1\" -type f -iname \"query\"" (project-root (project-current)))))
-    )
+             (format "find %s -not -path \"path1\" -type f -iname \"query\"" (project-root (project-current))))))
 
   (let ((qml-integration-ignored-paths '("path1" "path2" "path3")))
     (should (equal
              (qml-integration--get-find-command-string "query")
-             (format "find %s -not -path \"path1\" -not -path \"path2\" -not -path \"path3\" -type f -iname \"query\"" (project-root (project-current)))))
-    )
+             (format "find %s -not -path \"path1\" -not -path \"path2\" -not -path \"path3\" -type f -iname \"query\"" (project-root (project-current))))))
   )
 
 
-(ert-deftest test-qml-integration--get-qml-files-using-find ()
-
+(ert-deftest test-qml-integration--get-files-using-find ()
+  ;; Test getting regular qml files
   (test-fixture-setup
    "test-empty-project"
    (lambda ()
      (let ((expected-files nil))
-       (should (seq-set-equal-p (qml-integration--get-qml-files-using-find) expected-files)))))
+       (should (seq-set-equal-p (qml-integration--get-files-using-find "*qml") expected-files)))))
 
   (let ((qml-integration-ignored-paths nil))
     (test-fixture-setup
@@ -116,7 +116,7 @@ test code from inside a 'test project'."
                                           "tests/tst_test1.qml"
                                           "tests/tst_test2.qml"
                                           "tests/tst_test3.qml"))))
-         (should (seq-set-equal-p (qml-integration--get-qml-files-using-find) expected-files))))))
+         (should (seq-set-equal-p (qml-integration--get-files-using-find "*qml") expected-files))))))
 
   (let ((qml-integration-ignored-paths '("*/ignore-path1/*" "*/ignore-path2/*")))
     (test-fixture-setup
@@ -130,18 +130,28 @@ test code from inside a 'test project'."
                                           "tests/tst_test1.qml"
                                           "tests/tst_test2.qml"
                                           "tests/tst_test3.qml"
-                                          ;; "ignore-path1/ignore-path1-file1.qml"
-                                          ;; "ignore-path2/ignore-path2-file1.qml"
                                           ))))
-         (should (seq-set-equal-p (qml-integration--get-qml-files-using-find) expected-files)))))))
+         (should (seq-set-equal-p (qml-integration--get-files-using-find "*qml") expected-files))))))
+
+  ;; Test getting test files
+  (test-fixture-setup
+   "test-project"
+   (lambda ()
+     (let ((qml-integration-ignored-paths '("*/ignore-path1/*" "*/ignore-path2/*"))
+           (expected-files
+            (mapcar 'expand-file-name '("tests/tst_test1.qml"
+                                        "tests/tst_test2.qml"
+                                        "tests/tst_test3.qml"))))
+       (should (seq-set-equal-p (qml-integration--get-files-using-find "tst_*.qml") expected-files))))))
 
 
-(ert-deftest test-qml-integration--get-qml-files-using-fd ()
+(ert-deftest test-qml-integration--get-files-using-fd ()
+  ;; Test getting regular qml files
   (test-fixture-setup
    "test-empty-project"
    (lambda ()
      (let ((expected-files nil))
-       (should (seq-set-equal-p (qml-integration--get-qml-files-using-fd) expected-files)))))
+       (should (seq-set-equal-p (qml-integration--get-files-using-fd ".qml$") expected-files)))))
 
   (test-fixture-setup
    "test-project"
@@ -156,10 +166,9 @@ test code from inside a 'test project'."
                                         "tests/tst_test1.qml"
                                         "tests/tst_test2.qml"
                                         "tests/tst_test3.qml"))))
-       (should (seq-set-equal-p (qml-integration--get-qml-files-using-fd) expected-files))))))
+       (should (seq-set-equal-p (qml-integration--get-files-using-fd ".qml$") expected-files)))))
 
-
-(ert-deftest test-qml-integration--get-qml-test-files-using-fd ()
+  ;; Test getting test files
   (test-fixture-setup
    "test-project"
    (lambda ()
@@ -167,58 +176,145 @@ test code from inside a 'test project'."
             (mapcar 'expand-file-name '("tests/tst_test1.qml"
                                         "tests/tst_test2.qml"
                                         "tests/tst_test3.qml"))))
-       (should (seq-set-equal-p (qml-integration--get-qml-test-files-using-fd) expected-files))))))
-
-
-(ert-deftest test-qml-integration--get-qml-test-files-using-find ()
-  (test-fixture-setup
-   "test-project"
-   (lambda ()
-     (let ((expected-files
-            (mapcar 'expand-file-name '("tests/tst_test1.qml"
-                                        "tests/tst_test2.qml"
-                                        "tests/tst_test3.qml"))))
-       (should (seq-set-equal-p (qml-integration--get-qml-test-files-using-find) expected-files))))))
+       (should (seq-set-equal-p (qml-integration--get-files-using-fd "\"tst_.*.qml$\"") expected-files))))))
 
 
 (ert-deftest test-qml-integration--get-styles ()
   (let ((qml-integration-user-styles nil))
-    (should (equal (qml-integration--get-styles) '("Fusion" "material" "Universal" "Plasma")))
-    )
+    (should (equal (qml-integration--get-styles) '("Fusion" "material" "Universal" "Plasma"))))
 
   (let ((qml-integration-user-styles '("mystyle1" "mystyle2")))
     (should (equal (qml-integration--get-styles) '("mystyle1" "mystyle2" "Fusion" "material" "Universal" "Plasma")))))
 
 
-;; TODO: test-qml-integration-choose-qml-style
-
-
 (ert-deftest test-qml-integration--get-style-string ()
   (let ((qml-integration-qt-quick-controls-style nil))
-    (should (equal (qml-integration--get-style-string) ""))
-    )
+    (should (equal (qml-integration--get-style-string) "")))
 
   (let ((qml-integration-qt-quick-controls-style "some-style"))
     (should (equal (qml-integration--get-style-string) "QT_QUICK_CONTROLS_STYLE=some-style"))))
 
 
-;; TODO: test-qml-integration-run-qmlscene
-;; TODO: test-qml-integration-run-qmltestrunner
+(ert-deftest test-qml-integration--get-qmlscene-run-command ()
+  (let* ((qml-file "MyQmlFile.qml")
+         (qml-integration-qml-root-folder "some-root-folder")
+         (qml-integration-qmlscene-program "qmlscene")
+         (qml-integration-import-directories '("." "imports"))
+         (qml-integration-qmlscene-extra-args "--fullscreen")
+         (qml-integration-qt-quick-controls-style "Fusion")
+         (qml-integration-qt-install-bin-folder nil)
+         (expected-command
+          (format "cd %s && QT_QUICK_CONTROLS_STYLE=Fusion qmlscene -I . -I imports --fullscreen %s"
+                  qml-integration-qml-root-folder
+                  qml-file)))
+    ;; When qml-integration-qt-install-bin-folder is nil
+    (should (equal (qml-integration--get-qmlscene-run-command qml-file) expected-command))
+
+    ;; When qml-integration-qt-install-bin-folder is set
+    (setq qml-integration-qt-install-bin-folder "/some/path/")
+    (setq expected-command
+          (format "cd %s && QT_QUICK_CONTROLS_STYLE=Fusion /some/path/qmlscene -I . -I imports --fullscreen %s"
+                  qml-integration-qml-root-folder qml-file))
+    (should (equal (qml-integration--get-qmlscene-run-command qml-file) expected-command))
+
+    ;; If qml-integration-qmlscene-program is an absolute path, then
+    ;; qml-integration-qt-install-bin-folder is ignored
+    (setq qml-integration-qmlscene-program "/some/otherpath/qmlscene")
+    (setq expected-command
+          (format "cd %s && QT_QUICK_CONTROLS_STYLE=Fusion /some/otherpath/qmlscene -I . -I imports --fullscreen %s"
+                  qml-integration-qml-root-folder qml-file))
+    (should (equal (qml-integration--get-qmlscene-run-command qml-file) expected-command))
+
+    ;; If qml-integration-qmlscene-program is a relative path
+    (setq qml-integration-qmlscene-program "otherpath/qmlscene")
+    (setq expected-command
+          (format "cd %s && QT_QUICK_CONTROLS_STYLE=Fusion /some/path/otherpath/qmlscene -I . -I imports --fullscreen %s"
+                  qml-integration-qml-root-folder qml-file))
+    (should (equal (qml-integration--get-qmlscene-run-command qml-file) expected-command))
+    ))
 
 
 
+(ert-deftest test_qml-integration--get-qmllint-run-command ()
+  (let* ((qml-file "MyQmlFile.qml")
+         (qml-integration-qml-root-folder "some-root-folder")
+         (qml-integration-qmllint-program "qmllint")
+         (qml-integration-import-directories '("." "imports"))
+         (qml-integration-qmllint-extra-args "--strict")
+         (qml-integration-qt-quick-controls-style "Fusion")
+         (qml-integration-qt-install-bin-folder nil)
+         (expected-command
+          (format "cd %s && QT_QUICK_CONTROLS_STYLE=Fusion qmllint -I . -I imports --strict %s"
+                  qml-integration-qml-root-folder
+                  qml-file)))
+    ;; When qml-integration-qml-root-folder is set
+    (should (equal (qml-integration--get-qmllint-run-command qml-file) expected-command))
+
+    ;; When qml-integration-qml-root-folder is nil
+    (setq qml-integration-qml-root-folder nil)
+    (setq expected-command
+          (format "QT_QUICK_CONTROLS_STYLE=Fusion qmllint -I . -I imports --strict %s"
+                  qml-file))
+    (should (equal (qml-integration--get-qmllint-run-command qml-file) expected-command))
+
+    ;; When qml-integration-qt-install-bin-folder is set
+    (setq qml-integration-qt-install-bin-folder "/some/path/")
+    (setq expected-command
+          (format "QT_QUICK_CONTROLS_STYLE=Fusion /some/path/qmllint -I . -I imports --strict %s"
+                  qml-file))
+    (should (equal (qml-integration--get-qmllint-run-command qml-file) expected-command))
+
+    ;; If qml-integration-qmllint-program is an absolute path
+    (setq qml-integration-qmllint-program "/some/otherpath/qmllint")
+    (setq expected-command
+          (format "QT_QUICK_CONTROLS_STYLE=Fusion /some/otherpath/qmllint -I . -I imports --strict %s"
+                  qml-file))
+    (should (equal (qml-integration--get-qmllint-run-command qml-file) expected-command))
+    ))
 
 
-;; : find . -not -path "./build*" -not -path "*/.*" -type f | wc -l
+(ert-deftest test-qml-integration--get-qmltestrunner-run-command ()
+  "Test the generation of the qmltestrunner run command."
+  (let* ((qml-file "MyTestFile.qml")
+         (qml-integration-qml-root-folder "some-root-folder")
+         (qml-integration-qmltestrunner-program "qmltestrunner")
+         (qml-integration-import-directories '("." "imports"))
+         (qml-integration-qmltestrunner-extra-args "-silent")
+         (qml-integration-qt-quick-controls-style "Fusion")
+         (qml-integration-qt-install-bin-folder nil)
+         (expected-command
+          (format "cd %s && QT_QUICK_CONTROLS_STYLE=Fusion qmltestrunner -import . -import imports -silent -input %s"
+                  qml-integration-qml-root-folder
+                  qml-file)))
+    ;; When qml-integration-qml-root-folder is set
+    (should (equal (qml-integration--get-qmltestrunner-run-command qml-file) expected-command))
 
+    ;; When qml-integration-qml-root-folder is nil
+    (setq qml-integration-qml-root-folder nil)
+    (setq expected-command
+          (format "QT_QUICK_CONTROLS_STYLE=Fusion qmltestrunner -import . -import imports -silent -input %s"
+                  qml-file))
+    (should (equal (qml-integration--get-qmltestrunner-run-command qml-file) expected-command))
 
-;; : find . -type d \( -path "*/.*" -prune -o -path "./Documentation" -prune -o -path "./package" -prune -o -path "./sdk" -prune -o -path "./Tools" -prune -o -path "./trust_agent_ipc" -prune -o -path "./Dockerfile" -prune -o -path "./cmake" -prune -o -path "./licenses" -prune -o -path "./build*" -prune -o -path "./modules/_submodules" -prune -o -path "./modules/safe-c-library" -prune -o -path "./modules/logger" -prune -o -path "./modules/legacy" -prune -o -path "./modules/broker*" -prune -o -path "./modules/test*" -prune -o -path "./modules/edid_retriever" -prune -o -path "./modules/customization_example" -prune -o -path "./modules/vchan_plugins" -prune -o -path "./modules/tera_crypto" -prune -o -path "./modules/ndk_build" -prune -o -path "./modules/utils" -prune -o -path "./modules/customization" -prune -o -path "./modules/layer_4" -prune -o -path "./modules/android" -prune -o -path "./modules/high_performance_client" -prune -o -path "*/localization" -prune -o -path "*/translations" -prune -o -path "*/build" -prune \) -o -type f -name "*qml" | wc -l
+    ;; When qml-integration-qt-install-bin-folder is set
+    (setq qml-integration-qt-install-bin-folder "/some/path/")
+    (setq expected-command
+          (format "QT_QUICK_CONTROLS_STYLE=Fusion /some/path/qmltestrunner -import . -import imports -silent -input %s"
+                  qml-file))
+    (should (equal (qml-integration--get-qmltestrunner-run-command qml-file) expected-command))
 
-;; : find . -type d \( -path "*/.*" -prune -o -path "./Documentation" -prune -o -path "./package" -prune -o -path "./sdk" -prune -o -path "./Tools" -prune -o -path "./trust_agent_ipc" -prune -o -path "./Dockerfile" -prune -o -path "./cmake" -prune -o -path "./licenses" -prune -o -path "./build*" -prune -o -path "./modules/_submodules" -prune -o -path "./modules/safe-c-library" -prune -o -path "./modules/logger" -prune -o -path "./modules/legacy" -prune -o -path "./modules/broker*" -prune -o -path "./modules/test*" -prune -o -path "./modules/edid_retriever" -prune -o -path "./modules/customization_example" -prune -o -path "./modules/vchan_plugins" -prune -o -path "./modules/tera_crypto" -prune -o -path "./modules/ndk_build" -prune -o -path "./modules/utils" -prune -o -path "./modules/customization" -prune -o -path "./modules/layer_4" -prune -o -path "./modules/android" -prune -o -path "./modules/high_performance_client" -prune -o -path "*/localization" -prune -o -path "*/translations" -prune -o -path "*/build" -prune \) -not -path "*/.*" -not -path "./build*" -o -type f -name "*qml" | wc -l
+    ;; If qml-integration-qmltestrunner-program is an absolute path
+    (setq qml-integration-qmltestrunner-program "/some/otherpath/qmltestrunner")
+    (setq expected-command
+          (format "QT_QUICK_CONTROLS_STYLE=Fusion /some/otherpath/qmltestrunner -import . -import imports -silent -input %s"
+                  qml-file))
+    (should (equal (qml-integration--get-qmltestrunner-run-command qml-file) expected-command))
 
-
-
-;; TODO: Finish the tests
+    ;; When no QML file is not provided
+    (setq expected-command
+          (format "QT_QUICK_CONTROLS_STYLE=Fusion /some/otherpath/qmltestrunner -import . -import imports -silent"
+                  qml-integration-qml-root-folder))
+    (should (equal (qml-integration--get-qmltestrunner-run-command) expected-command))))
 
 
 (provide 'qml-integration-tests)
