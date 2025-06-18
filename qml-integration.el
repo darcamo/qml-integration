@@ -157,7 +157,7 @@ The import directories are taken from the
              "-import"
            "-I"))
         (import-dir-args qi-import-directories))
-    (mapcan (lambda (dir) (list flag dir)) import-dir-args)))
+    (mapcan (lambda (dir) (list flag (expand-file-name dir))) import-dir-args)))
 
 
 (defun qi--get-import-directories-string (tool)
