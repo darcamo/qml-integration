@@ -361,9 +361,9 @@ project, unless `current-prefix-arg' was passed."
       (apply 'start-process process-name buffer-name program process-args)
       ;; (compilation-mode)
 
-      (pop-to-buffer (buffer-name))
-      ;; (display-buffer (buffer-name))
-      )))
+      (unless (eq tool 'qmlscene)
+        (read-only-mode 1)
+        (display-buffer (buffer-name))))))
 
 
 (defun qi-run-qmlscene (&optional qml-file)
