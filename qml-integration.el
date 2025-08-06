@@ -351,12 +351,22 @@ project, unless `current-prefix-arg' was passed."
         (setq-local default-directory default-directory)))
 
     (with-current-buffer buffer-name
-      (goto-char (point-max))
+      (delete-region (point-min) (point-max))
+
       (insert
-       (format "\nRunning '%s' on file '%s'\n"
-               (qi--get-qt-tool-fullpath tool)
-               qml-file))
-      (insert (format "Arguments: \"%s\"\n" (s-join " " process-args)))
+       (format "\n%s %s\n%s %s\n"
+               (propertize "Tool:" 'face 'font-lock-keyword-face)
+               (propertize (qi--get-qt-tool-fullpath tool)
+                           'face
+                           font-lock-constant-face)
+               (propertize "File:" 'face 'font-lock-keyword-face)
+               (propertize qml-file 'face 'font-lock-string-face)))
+      (insert
+       (format "%s \"%s\"\n\n"
+               (propertize "Arguments:" 'face 'font-lock-keyword-face)
+               (propertize (s-join " " process-args)
+                           'face
+                           'font-lock-string-face)))
 
       (apply 'start-process process-name buffer-name program process-args)
       ;; (compilation-mode)
