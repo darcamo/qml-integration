@@ -358,7 +358,7 @@ project, unless `current-prefix-arg' was passed."
                (propertize "Tool:" 'face 'font-lock-keyword-face)
                (propertize (qi--get-qt-tool-fullpath tool)
                            'face
-                           font-lock-constant-face)
+                           'font-lock-constant-face)
                (propertize "File:" 'face 'font-lock-keyword-face)
                (propertize qml-file 'face 'font-lock-string-face)))
       (insert
