@@ -27,8 +27,9 @@
 
 ;;; Commentary:
 
-;; Provide functions to easily run qmlscene and qmltestrunner with any
-;; of the QML files in the project.
+;; Provide functions to easily run the different QML tools with any of the QML
+;; files in a project. The supported tools are: qmlscene (to view QML files),
+;; qmllint and qmltestrunner.
 
 ;;; Code:
 (require 'project)
@@ -41,7 +42,10 @@
   :prefix "qml-integration-")
 
 (defcustom qi-qt-install-bin-folder nil
-  "The bin folder inside Qt installation directory."
+  "The bin folder inside Qt installation directory.
+
+All Qt tools (qmlscene, qmltestrunner, qmllint) are expected to be in
+this folder."
   :type '(string))
 
 (defcustom qi-qmlscene-program "qmlscene"
@@ -59,8 +63,8 @@ It can be simply \"qmltestrunner\" if it is in the system path."
 It can be simply \"qmllint\" if it is in the system path."
   :type '(string))
 
-(defcustom qi-qml-root-folder nil
-  "Root folder from where to run qmlscene."
+(defcustom qi-working-directory nil
+  "Folder from where to run the tools."
   :type '(directory)
   :safe #'stringp)
 
@@ -118,6 +122,12 @@ For each `directory' in `qml-integration-ignored-paths', the string
   :type '(repeat string)
   :safe #'listp)
 
+
+(defun qi--get-working-directory ()
+  "Get the working directory to run the tools from."
+  (or qi-working-directory default-directory))
+
+
 (defun qi--get-qt-tool (tool)
   "Get the path of the Qt TOOL.
 
@@ -157,12 +167,18 @@ The import directories are taken from the
              "-import"
            "-I"))
         (import-dir-args qi-import-directories))
-    (mapcan (lambda (dir) (list flag (expand-file-name dir))) import-dir-args)))
+    (mapcan
+     (lambda (dir)
+       (list
+        flag
+        (file-relative-name (expand-file-name dir)
+                            (qi--get-working-directory))))
+     import-dir-args)))
 
 
 (defun qi--get-import-directories-string (tool)
   "Get a string with import statements to pass to the TOOL."
-  (s-join " " (qml-integration--get-import-directories-as-args tool)))
+  (s-join " " (qi--get-import-directories-as-args tool)))
 
 
 (defun qi--get-extra-args (tool)
@@ -333,8 +349,7 @@ project, unless `current-prefix-arg' was passed."
             (or qml-file (qi--ask-for-a-qml-file))))
          (process-name (qi--get-process-name tool qml-file))
          (buffer-name (qi--get-buffer-name tool qml-file))
-         (root-folder qi-qml-root-folder)
-         (default-directory (or root-folder default-directory))
+         (default-directory (qi--get-working-directory))
          (process-environment
           (if qi-qt-quick-controls-style
               (cons
