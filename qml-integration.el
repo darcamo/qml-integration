@@ -123,9 +123,13 @@ For each `directory' in `qml-integration-ignored-paths', the string
   :safe #'listp)
 
 
-(defun qi--get-working-directory ()
-  "Get the working directory to run the tools from."
-  (or qi-working-directory default-directory))
+(defun qi--get-working-directory (&optional file)
+  "Get the working directory to run the tools to process FILE."
+  (if qi-working-directory
+      qi-working-directory
+    (if-let* ((proj (project-current nil file)))
+      (project-root proj)
+      default-directory)))
 
 
 (defun qi--get-qt-tool (tool)
@@ -162,7 +166,9 @@ The list is either in the form `'(\"-I\" \"dir1\" \"-I\" \"dir2\")' or
 
 The import directories are taken from the
 `qml-integration-import-directories'."
-  (let ((flag
+
+  (let ((default-directory (qi--get-working-directory))
+        (flag
          (if (eq tool 'qmltestrunner)
              "-import"
            "-I"))
@@ -171,8 +177,10 @@ The import directories are taken from the
      (lambda (dir)
        (list
         flag
-        (file-relative-name (expand-file-name dir)
-                            (qi--get-working-directory))))
+        (concat
+         "./"
+         (file-relative-name (expand-file-name dir)
+                             (qi--get-working-directory)))))
      import-dir-args)))
 
 
@@ -349,42 +357,58 @@ project, unless `current-prefix-arg' was passed."
             (or qml-file (qi--ask-for-a-qml-file))))
          (process-name (qi--get-process-name tool qml-file))
          (buffer-name (qi--get-buffer-name tool qml-file))
-         (default-directory (qi--get-working-directory))
+         (cwd (qi--get-working-directory))
+         (style-string
+          (if qi-qt-quick-controls-style
+              (format "QT_QUICK_CONTROLS_STYLE=%s" qi-qt-quick-controls-style)
+            ""))
          (process-environment
           (if qi-qt-quick-controls-style
-              (cons
-               (format "QT_QUICK_CONTROLS_STYLE=%s"
-                       qi-qt-quick-controls-style)
-               process-environment)
+              (cons style-string process-environment)
             process-environment))
          (program (qi--get-qt-tool-fullpath tool))
-         (process-args (qi--get-tool-program-args tool qml-file)))
+         (process-args (qi--get-tool-program-args tool qml-file))
+         (process-args-string (s-join " " process-args)))
 
     ;; Create buffer with name in buffer-name, if it does not exist.
     (unless (get-buffer buffer-name)
-      (with-current-buffer (get-buffer-create buffer-name)
-        (setq-local default-directory default-directory)))
+      (with-current-buffer (get-buffer-create buffer-name)))
 
     (with-current-buffer buffer-name
+      (read-only-mode 0)
       (delete-region (point-min) (point-max))
 
-      (insert
-       (format "\n%s %s\n%s %s\n"
-               (propertize "Tool:" 'face 'font-lock-keyword-face)
-               (propertize (qi--get-qt-tool-fullpath tool)
-                           'face
-                           'font-lock-constant-face)
-               (propertize "File:" 'face 'font-lock-keyword-face)
-               (propertize qml-file 'face 'font-lock-string-face)))
-      (insert
-       (format "%s \"%s\"\n\n"
-               (propertize "Arguments:" 'face 'font-lock-keyword-face)
-               (propertize (s-join " " process-args)
-                           'face
-                           'font-lock-string-face)))
+      ;; We need to set default-directory again because we are now in a
+      ;; different buffer.
+      (let ((default-directory cwd))
+        (insert
+         (format "\n%s %s\n%s %s\n%s %s\n"
+                 (propertize "Working Directory:" 'face 'font-lock-keyword-face)
+                 (propertize default-directory 'face 'font-lock-string-face)
+                 (propertize "Tool:" 'face 'font-lock-keyword-face)
+                 (propertize program 'face 'font-lock-constant-face)
+                 (propertize "File:" 'face 'font-lock-keyword-face)
+                 (propertize qml-file 'face 'font-lock-string-face)))
+        (insert
+         (format "%s \"%s\"\n\n"
+                 (propertize "Arguments:" 'face 'font-lock-keyword-face)
+                 (propertize process-args-string 'face 'font-lock-string-face)))
+        (insert
+         (format "%s\n    %s\n\n"
+                 (propertize "Equivalent shell command:"
+                             'face
+                             'font-lock-keyword-face)
+                 (propertize (format "cd %s && %s %s %s"
+                                     default-directory style-string
+                                     program ;;
+                                     process-args-string)
+                             'face 'font-lock-constant-face)))
 
-      (apply 'start-process process-name buffer-name program process-args)
-      ;; (compilation-mode)
+        (insert
+         (propertize
+          "----------------------------------------------------------------------\n"
+          'face 'font-lock-comment-face))
+        (apply 'start-process process-name buffer-name program process-args))
 
       (unless (eq tool 'qmlscene)
         (read-only-mode 1)
