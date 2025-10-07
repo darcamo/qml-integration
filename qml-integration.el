@@ -123,6 +123,10 @@ For each `directory' in `qml-integration-ignored-paths', the string
   :safe #'listp)
 
 
+(defvar qi--last-tool-output-buffer-name nil
+  "Name of the buffer with output from the last tool run.")
+
+
 (defun qi--get-working-directory (&optional file)
   "Get the working directory to run the tools to process FILE."
   (if qi-working-directory
@@ -375,6 +379,7 @@ project, unless `current-prefix-arg' was passed."
       (with-current-buffer (get-buffer-create buffer-name)))
 
     (with-current-buffer buffer-name
+      (setq qi--last-tool-output-buffer-name buffer-name)
       (read-only-mode 0)
       (delete-region (point-min) (point-max))
 
@@ -413,6 +418,14 @@ project, unless `current-prefix-arg' was passed."
       (unless (eq tool 'qmlscene)
         (read-only-mode 1)
         (display-buffer (buffer-name))))))
+
+
+(defun qi-view-last-tool-output ()
+  "Display the buffer with output from last tool run."
+  (interactive)
+  (if qi--last-tool-output-buffer-name
+      (display-buffer qi--last-tool-output-buffer-name)
+    (error "No tool has run previously")))
 
 
 (defun qi-run-qmlscene (&optional qml-file)
