@@ -455,6 +455,73 @@ If QML-FILE is not provided, then ask the user to choose one in the project."
       (qi--run-tool 'qmltestrunner chosen-file))))
 
 
+(defconst qi-qmllint-warnings
+  '("" "missing-property" "unqualified" "import" "deprecated" "readonly")
+  "List of qmllint warnings that we can disable with a comment.")
+
+
+(defvar qi--last-qmllint-disabled-warning nil
+  "Warning ID chosen last time.")
+
+
+(defun qi--add-qmllint-comment-line (&optional enable)
+  "Add a qmllint comment to enable/disable warnings on the current line.
+
+If ENABLE is non-nil, then enable warnings. Otherwise disable them."
+  (let* ((initial-input
+          (if enable
+              qi--last-qmllint-disabled-warning
+            nil))
+         (warning-id
+          (completing-read
+           "Disable warning (leave empty to disable all): " qi-qmllint-warnings
+           nil t initial-input nil (car qi-qmllint-warnings)))
+         (type-string
+          (if enable
+              "enable"
+            "disable"))
+         (comment
+          (if (string= warning-id "")
+              (format "// qmllint %s" type-string)
+            (format "// qmllint %s %s" type-string warning-id))))
+    (save-excursion
+      (let ((line-end (line-end-position)))
+        (beginning-of-line)
+        (if (re-search-forward "//\\s-*qmllint disable.*" line-end t)
+            (replace-match comment t t)
+          (goto-char line-end)
+          (unless (or (= (point) (line-beginning-position))
+                      (memq (char-before) '(?\s ?\t)))
+            (insert " "))
+          (insert comment))))
+
+    (unless enable
+      (setq qi--last-qmllint-disabled-warning warning-id))
+
+    (message "Added comment: %s" comment)))
+
+
+(defun qi-add-qmllint-disable-comment ()
+  "Add a comment to disable qmllint warning on the current line.
+
+The comment is \"qmllint disable <warning-id>\" where <warning-id> is
+one of the possible checks. The user is prompted to choose the warning
+id from a know list. An empty warning id disables all checks for the
+line."
+  (interactive)
+  (qi--add-qmllint-comment-line))
+
+
+(defun qi-add-qmllint-enable-comment ()
+  "Add a comment to enable qmllint warning on the current line.
+
+The comment is \"qmllint enable <warning-id>\" where <warning-id> is
+one of the possible checks. The user is prompted to choose the warning
+id from a know list. An empty warning id enables all checks for the
+line."
+  (interactive)
+  (qi--add-qmllint-comment-line t))
+
 ;; xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 (provide 'qml-integration)
 
