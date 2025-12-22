@@ -464,18 +464,27 @@ If QML-FILE is not provided, then ask the user to choose one in the project."
   "Warning ID chosen last time.")
 
 
-(defun qi--add-qmllint-comment-line (&optional enable)
+(defun qi--add-qmllint-comment-line (&optional enable warning-id)
   "Add a qmllint comment to enable/disable warnings on the current line.
 
-If ENABLE is non-nil, then enable warnings. Otherwise disable them."
+If ENABLE is non-nil, then enable warnings. Otherwise disable them.
+
+If WARNING-ID is provided, then use it as the warning id to
+enable/disable. Otherwise, prompt the user to choose a warning id from a
+known list."
   (let* ((initial-input
           (if enable
               qi--last-qmllint-disabled-warning
             nil))
          (warning-id
-          (completing-read
-           "Disable warning (leave empty to disable all): " qi-qmllint-warnings
-           nil t initial-input nil (car qi-qmllint-warnings)))
+          (or warning-id
+              (completing-read "Disable warning (leave empty to disable all): "
+                               qi-qmllint-warnings
+                               nil
+                               t
+                               initial-input
+                               nil
+                               (car qi-qmllint-warnings))))
          (type-string
           (if enable
               "enable"
@@ -502,14 +511,39 @@ If ENABLE is non-nil, then enable warnings. Otherwise disable them."
 
 
 (defun qi-add-qmllint-disable-comment ()
-  "Add a comment to disable qmllint warning on the current line.
+  "Add a comment to disable qmllint warning on the current line or region.
 
-The comment is \"qmllint disable <warning-id>\" where <warning-id> is
-one of the possible checks. The user is prompted to choose the warning
-id from a know list. An empty warning id disables all checks for the
-line."
+When a region is active, wrap it by inserting a disabling comment before
+the first line and an enabling comment after the last line."
   (interactive)
-  (qi--add-qmllint-comment-line))
+  (if (use-region-p)
+      (let ((start (copy-marker (region-beginning)))
+            (end (copy-marker (region-end)))
+            (warning-id
+             (completing-read "Disable warning (leave empty to disable all): "
+                              qi-qmllint-warnings
+                              nil
+                              t)))
+        (progn
+          (save-excursion
+            (goto-char start)
+            (beginning-of-line)
+            (newline)
+            (forward-line -1)
+            (qi--add-qmllint-comment-line nil warning-id)
+            (comment-indent))
+          (save-excursion
+            (goto-char end)
+            (when (and (> (marker-position end) (marker-position start))
+                       (= (point) (line-beginning-position)))
+              (forward-line -1))
+            (end-of-line)
+            (newline)
+            (qi--add-qmllint-comment-line t warning-id)
+            (comment-indent)))
+        (set-marker start nil)
+        (set-marker end nil))
+    (qi--add-qmllint-comment-line)))
 
 
 (defun qi-add-qmllint-enable-comment ()
