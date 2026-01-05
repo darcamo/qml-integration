@@ -456,7 +456,13 @@ If QML-FILE is not provided, then ask the user to choose one in the project."
 
 
 (defconst qi-qmllint-warnings
-  '("" "missing-property" "unqualified" "import" "deprecated" "readonly")
+  '(""
+    "missing-property"
+    "unqualified"
+    "import"
+    "deprecated"
+    "readonly"
+    "unresolved-alias")
   "List of qmllint warnings that we can disable with a comment.")
 
 
