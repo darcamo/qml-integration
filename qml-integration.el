@@ -462,7 +462,8 @@ If QML-FILE is not provided, then ask the user to choose one in the project."
     "import"
     "deprecated"
     "readonly"
-    "unresolved-alias")
+    "unresolved-alias"
+    "incompatible-type")
   "List of qmllint warnings that we can disable with a comment.")
 
 
